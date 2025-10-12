@@ -1,12 +1,13 @@
+import os
 from typing import Dict, Tuple, Union
 # for annotation of classes
-from fastq_tools import parse_bounds, check_sequence_validity
+from fastq_tools import parse_bounds, check_sequence_validity, read_fastq
 # for filter_fastq function 
 from dna_rna_tools import is_nucleic_acid, transcribe, reverse, complement, reverse_complement
 # for dna_rna_tools function 
 
-
-def filter_fastq(seqs: Dict[str, Tuple[str, str]],
+def filter_fastq(input_fastq: str,
+                 output_fastq: str,
                  gc_bounds: Union[float, int, Tuple[Union[float, int], Union[float, int]]] = (0, 100),
                  length_bounds: Union[float, int, Tuple[Union[float, int], Union[float, int]]] = (0, 2**32),
                  quality_threshold: float = 0) -> Dict[str, Tuple[str, str]]:
@@ -14,27 +15,33 @@ def filter_fastq(seqs: Dict[str, Tuple[str, str]],
     Filters FASTQ sequences by GC-content, length, and quality.
     
     Arguments:
-        seqs: dictionary of FASTQ sequences, where the key is the sequence ID, 
-        the value is a tuple [nucleotide sequence, quality string]
+        input_fastq: path to the input FASTQ file
+        output_fastq: name of the output FASTQ file
         gc_bounds: GC-content interval in %, default (0, 100)
         length_bounds: sequence length interval, default (0, 2**32)
         quality_threshold: threshold value of mean quality, default 0
-        
     Returns:
-        Dict[str, Tuple[str, str]]: filtered dictionary of sequences that satisfy all requirements
+        None; Writes a new FASTQ file inside the 'filtered' folder
+        containing only sequences that pass all filters.
     """
     
     parsed_gc_bounds = parse_bounds(gc_bounds, 0.0, 100.0)
     parsed_length_bounds = parse_bounds(length_bounds, 0.0, 2**32)
     
-    filtered_seqs = {}
-    
-    for seq_id, (sequence, quality) in seqs.items():
-        if check_sequence_validity(sequence, quality, parsed_gc_bounds, 
-                                parsed_length_bounds, quality_threshold):
-            filtered_seqs[seq_id] = (sequence, quality)
-    
-    return filtered_seqs
+    os.makedirs("filtered", exist_ok=True)
+    output_path = os.path.join("filtered", output_fastq)
+
+    if os.path.exists(output_path):
+        raise FileExistsError(f"File '{output_path}' already exists — choose another name")
+
+
+    with open(output_path, "w") as out:
+        for seq_id, seq, plus, qual in read_fastq(input_fastq):
+            if check_sequence_validity(seq, qual,
+                                       parsed_gc_bounds,
+                                       parsed_length_bounds,
+                                       quality_threshold):
+                out.write(f"{seq_id}\n{seq}\n{plus}\n{qual}\n")
 
 def dna_rna_tools(*args: str) -> Union[str, list[str], None]:
     """
