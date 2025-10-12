@@ -1,7 +1,7 @@
 # Bioinf Toolbox :beetle:
 
-A lightweight set of tools for basic DNA and RNA sequence analysis.  
-Includes utilities for sequence validation, transcription, complement generation, and FASTQ filtering.
+A lightweight set of tools for basic DNA, RNA, and FASTQ sequence analysis.  
+Includes utilities for sequence validation, transcription, complement generation, FASTQ filtering, and bioinformatic file processing.
 
 ---
 
@@ -43,10 +43,24 @@ Utilities for filtering and analyzing FASTQ sequencing data.
 
 Available functions:
 
-- `calculate_gc_content()`: computes GC-content percentage
-- `calculate_mean_quality()`: calculates average Phred33 quality scores
-- `parse_bounds()` - handles flexible boundary input formats
-- `check_sequence_validity()` - validates sequences against multiple criteria
+- `read_fastq(input_fastq)` — reads FASTQ file line by line and yields each record as a tuple  
+- `parse_bounds()` — handles flexible boundary input formats  
+- `calculate_gc_content()` — computes GC-content percentage  
+- `calculate_mean_quality()` — calculates average Phred33 quality score  
+- `check_sequence_validity()` — validates sequence against GC-content, length, and quality criteria  
+
+The updated FASTQ reading logic now works **streamingly**:  
+it processes one sequence at a time, immediately filtering and writing output without loading the entire file into memory.  
+This makes it efficient for large datasets.
+
+## Script `bio_files_processor.py`
+
+This script provides independent file-processing utilities for bioinformatics data formats.
+
+Avaliable functions:
+
+- `convert_multiline_fasta_to_oneline` - converts multi-line FASTA files so that each sequence is written on a single line
+- `parse_blast_output(input_file, output_file)` - parses BLAST text output, extracts the name of the best match (top hit) for each query, and saves unique protein names sorted alphabetically in one column
 
 ## Usage
 
@@ -101,10 +115,45 @@ rna_seq = transcribe("ATGC")
 gc_percent = calculate_gc_content("AGATACACA")
 ```
 
+### BioFiles Processing
+
+```python
+convert_multiline_fasta_to_oneline(example_input.fasta, example_output.fasta)
+```
+
+**Example input:**
+
+```python
+>seq1
+ATGC
+TTAA
+>seq2
+GGG
+CCC
+```
+
+**Output:**
+
+```python
+>seq1
+ATGCTTAA
+>seq2
+GGGCCC
+```
+
+If `output_fasta` is not provided, the function automatically creates a file name using the `_oneline` suffix.
+
+```python
+parse_blast_output(example_input.txt, example_output.txt)
+```
+
+**Input:** BLAST result `.txt` file  
+**Output:** one-column `.txt` file with best hit names
+
 ## Author & Contacts
 
 Maria Domracheva
 
 :frog: email: <m.domracheva2000@yandex.ru>
-:snake: GitHub: [avedomra](https://gist.github.com/avedomra)
 
+:snake: GitHub: [avedomra](https://gist.github.com/avedomra)
