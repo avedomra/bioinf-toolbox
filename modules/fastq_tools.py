@@ -1,4 +1,6 @@
-from typing import Tuple, Union
+import os
+# for 
+from typing import Dict, Tuple, Union, Iterator
 # for annotation of classes in functions
 
 def calculate_gc_content(sequence: str) -> float:
@@ -91,3 +93,38 @@ def check_sequence_validity(sequence: str, quality: str,
         return False
     
     return True
+
+def read_fastq(filepath: str) -> Iterator[Tuple[str, str, str, str]]:
+    """
+    Reads a FASTQ file line by line and yields one record at a time.
+
+    Each yielded record is a tuple:
+        (id_line, sequence, plus_line, quality_string)
+    """
+    with open(filepath, "r") as f:
+        while True:
+            id_line = f.readline().strip()
+            if not id_line:
+                break
+            seq = f.readline().strip()
+            plus = f.readline().strip()
+            qual = f.readline().strip()
+            yield id_line, seq, plus, qual
+
+def write_fastq(records: Dict[str, Tuple[str, str, str]], output_fastq: str):
+    """
+    Writes FASTQ records to a file inside the 'filtered' folder.
+
+    Arguments:
+        records: {id_line: (sequence, plus_line, quality_string)}
+        output_fastq: name of the output FASTQ file
+    """
+    os.makedirs("filtered", exist_ok=True)
+    output_path = os.path.join("filtered", output_fastq)
+
+    if os.path.exists(output_path):
+        raise FileExistsError(f"File '{output_path}' already exists - choose another name")
+
+    with open(output_path, "w") as out:
+        for seq_id, (sequence, plus, quality) in records.items():
+            out.write(f"{seq_id}\n{sequence}\n{plus}\n{quality}\n")
